@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Churn Analysis — Week of Apr 6, 2026</title>
+<style>
+  *, *::before, *::before { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f9f7; color: #1a1a18; margin: 0; padding: 2rem; }
+
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  h2 { font-size: 16px; font-weight: 500; margin: 0 0 4px; border-top: 0.5px solid rgba(0,0,0,0.1); padding-top: 1.5rem; }
+  .page-sub { font-size: 13px; color: #5f5e5a; margin: 0 0 1.5rem; }
+  .section-sub { font-size: 13px; color: #5f5e5a; margin: 0 0 1rem; }
+  .section-label { font-size: 13px; font-weight: 500; color: #5f5e5a; margin: 0 0 8px; }
+  .note { font-size: 12px; color: #5f5e5a; margin: 8px 0 0; }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .metric { background: #f1efe8; border-radius: 8px; padding: 1rem; }
+  .metric .label { font-size: 13px; color: #5f5e5a; margin: 0 0 4px; }
+  .metric .val { font-size: 24px; font-weight: 500; margin: 0; }
+  .metric .sub { font-size: 12px; color: #888780; margin: 2px 0 0; }
+
+  .grid-2 { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 16px; margin-bottom: 1.5rem; }
+  .grid-2b { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px; margin-bottom: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 1.5rem; }
+  .grid-mb { margin-bottom: 1.5rem; }
+
+  .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; }
+  .card-table { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+
+  .insight-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 0 8px 8px 0; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; }
+  .insight-card p { margin: 0; }
+  .insight-card .title { font-weight: 500; margin-bottom: 4px; }
+  .insight-card .desc { font-size: 12px; color: #5f5e5a; }
+
+  .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; }
+  .signal { border-radius: 8px; padding: 10px 14px; border-left-width: 3px; border-left-style: solid; }
+  .signal .title { font-weight: 500; margin: 0 0 4px; }
+  .signal .desc { font-size: 12px; color: #5f5e5a; margin: 0; }
+
+  .recs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; font-size: 13px; }
+  .rec { background: #f1efe8; border-radius: 8px; padding: 12px; }
+  .rec .title { font-weight: 500; margin: 0 0 6px; }
+  .rec .desc { font-size: 12px; color: #5f5e5a; margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 9px 12px; font-weight: 500; color: #5f5e5a; background: #f1efe8; }
+  td { padding: 9px 12px; border-top: 0.5px solid rgba(0,0,0,0.08); }
+  tr:nth-child(even) td { background: #fafaf8; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 12px; color: #5f5e5a; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+  .chart-wrap { position: relative; width: 100%; }
+
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; }
+  .pill-red { background: #FCEBEB; color: #A32D2D; }
+  .pill-amber { background: #FAEEDA; color: #854F0B; }
+  .pill-blue { background: #E6F1FB; color: #185FA5; }
+  .pill-purple { background: #EEEDFE; color: #534AB7; }
+  .pill-gray { background: #F1EFE8; color: #5F5E5A; }
+  .pill-green { background: #EAF3DE; color: #3B6D11; }
+
+  .mrr-loss { font-weight: 500; color: #A32D2D; }
+
+  .divider { border: none; border-top: 0.5px solid rgba(0,0,0,0.1); margin: 2rem 0 1.5rem; }
+
+  @media (max-width: 780px) {
+    body { padding: 1rem; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .grid-2, .grid-2b, .grid-3, .signal-grid, .recs { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Churn Analysis — Week of Apr 6, 2026</h1>
+<p class="page-sub">131 cancellations across all audiences. Cancellation week ending Apr 12, 2026. All billing MRR values in subscription currency (USD/CAD mixed).</p>
+
+<!-- ── SECTION 1: TOP LINE ── -->
+<div class="metrics">
+  <div class="metric"><p class="label">Cancellations</p><p class="val">131</p><p class="sub">week of Apr 6</p></div>
+  <div class="metric"><p class="label">Total MRR lost</p><p class="val">$2,394</p><p class="sub">$18.27 avg per churn</p></div>
+  <div class="metric"><p class="label">Annual vs monthly</p><p class="val">98 / 33</p><p class="sub">75% annual</p></div>
+  <div class="metric"><p class="label">Long-term churns</p><p class="val">61</p><p class="sub">had &gt;365 days tenure</p></div>
+</div>
+
+<!-- ── SECTION 2: REASONS ── -->
+<h2>Churn reasons</h2>
+<p class="section-sub">By count and MRR impact — syncing issues are low in count but high in MRR due to large team accounts.</p>
+
+<div class="grid-2b">
+  <div>
+    <p class="section-label">MRR lost by reason</p>
+    <div class="legend">
+      <span><span class="swatch" style="background:#E24B4A"></span>Budget / downsizing $768</span>
+      <span><span class="swatch" style="background:#888780"></span>Other $625</span>
+      <span><span class="swatch" style="background:#7F77DD"></span>Syncing / reliability $530</span>
+      <span><span class="swatch" style="background:#EF9F27"></span>Speed / perf $265</span>
+      <span><span class="swatch" style="background:#1D9E75"></span>Missing features $98</span>
+      <span><span class="swatch" style="background:#378ADD"></span>Other reasons $92</span>
+    </div>
+    <div class="chart-wrap" style="height:220px"><canvas id="mrrReason" role="img" aria-label="Bar chart of MRR lost by churn reason">MRR by reason.</canvas></div>
+  </div>
+  <div>
+    <p class="section-label">Count by reason</p>
+    <div class="chart-wrap" style="height:250px"><canvas id="countReason" role="img" aria-label="Horizontal bar chart of churn count by reason">Count by reason.</canvas></div>
+  </div>
+</div>
+
+<!-- ── SECTION 3: COMPETITORS / MRR SIZE / TENURE ── -->
+<div class="grid-3">
+  <div>
+    <p class="section-label">Competitor destination</p>
+    <div class="chart-wrap" style="height:220px"><canvas id="compChart" role="img" aria-label="Horizontal bar chart of competitor destinations">Competitors.</canvas></div>
+  </div>
+  <div>
+    <p class="section-label">MRR size distribution (customers)</p>
+    <div class="chart-wrap" style="height:220px"><canvas id="mrrBucket" role="img" aria-label="Bar chart of customers by MRR bucket">MRR buckets.</canvas></div>
+  </div>
+  <div>
+    <p class="section-label">Tenure at cancellation</p>
+    <div class="chart-wrap" style="height:220px"><canvas id="tenureChart" role="img" aria-label="Donut chart of customer tenure">Tenure.</canvas></div>
+  </div>
+</div>
+
+<!-- ── SECTION 4: TENURE BY REASON ── -->
+<div class="grid-mb">
+  <p class="section-label">Avg tenure by reason (days) — higher = more loyal customers being lost</p>
+  <div class="chart-wrap" style="height:160px"><canvas id="tenureReason" role="img" aria-label="Bar chart of average tenure by churn reason">Tenure by reason.</canvas></div>
+</div>
+
+<!-- ── SECTION 5: HIGH VALUE TABLE ── -->
+<h2>High-value churns</h2>
+<p class="section-sub">MRR ≥ $24 — 30 customers accounting for $1,463 (61% of week MRR)</p>
+
+<div class="card-table">
+  <table>
+    <thead><tr><th>Customer</th><th style="text-align:right">MRR</th><th>Interval</th><th>Reason</th><th>Going to</th><th>Comment</th></tr></thead>
+    <tbody>
+      <tr><td>United Advisor Group, LLC</td><td style="text-align:right" class="mrr-loss">$342</td><td>Annual</td><td><span class="pill pill-purple">Syncing</span></td><td>Sharepoint</td><td style="color:#5f5e5a;font-size:12px">Files not consistently saved</td></tr>
+      <tr><td>(anonymous)</td><td style="text-align:right" class="mrr-loss">$108</td><td>Monthly</td><td><span class="pill pill-red">Budget</span></td><td>Other</td><td style="color:#5f5e5a;font-size:12px">—</td></tr>
+      <tr><td>Arcadian Projects Inc.</td><td style="text-align:right" class="mrr-loss">$90</td><td>Monthly</td><td><span class="pill pill-purple">Syncing</span></td><td>Other</td><td style="color:#5f5e5a;font-size:12px">Slow/unreliable on cellular</td></tr>
+      <tr><td>Hunsaker Dental</td><td style="text-align:right;font-weight:500">$54</td><td>Monthly</td><td><span class="pill pill-gray">Other</span></td><td>Sharepoint</td><td style="color:#5f5e5a;font-size:12px">Moved to integrated IT solution</td></tr>
+      <tr><td>(anonymous) ×2</td><td style="text-align:right;font-weight:500">$54</td><td>Monthly</td><td><span class="pill pill-gray">Other</span></td><td>—</td><td style="color:#5f5e5a;font-size:12px">—</td></tr>
+      <tr><td>(anonymous)</td><td style="text-align:right;font-weight:500">$54</td><td>Monthly</td><td><span class="pill pill-amber">Speed</span></td><td>Other</td><td style="color:#5f5e5a;font-size:12px">—</td></tr>
+      <tr><td>James Maglietta</td><td style="text-align:right;font-weight:500">$45</td><td>Annual</td><td><span class="pill pill-gray">Other</span></td><td>—</td><td style="color:#5f5e5a;font-size:12px">Never used, refund request denied</td></tr>
+      <tr><td>Justin Botterill / U of T Scarborough</td><td style="text-align:right;font-weight:500">$45</td><td>Annual</td><td><span class="pill pill-amber">Speed</span></td><td>Self-hosting</td><td style="color:#5f5e5a;font-size:12px">Upload speeds too slow / mapped drives incompatible</td></tr>
+      <tr><td>Jonathan P Asmus / Vapor Music</td><td style="text-align:right;font-weight:500">$45</td><td>Annual</td><td><span class="pill pill-red">Budget</span></td><td>Google Drive</td><td style="color:#5f5e5a;font-size:12px">Duplicate account confusion / already pay Google</td></tr>
+      <tr><td>YPO Metro NY</td><td style="text-align:right;font-weight:500">$36</td><td>Monthly</td><td><span class="pill pill-red">Budget</span></td><td>—</td><td style="color:#5f5e5a;font-size:12px">—</td></tr>
+      <tr><td>(anonymous)</td><td style="text-align:right;font-weight:500">$32</td><td>Monthly</td><td><span class="pill pill-gray">Other</span></td><td>Self-hosting</td><td style="color:#5f5e5a;font-size:12px">Leaving due to unlimited plan cancellation</td></tr>
+      <tr><td>Axiom Advisors / (anonymous) ×2</td><td style="text-align:right;font-weight:500">$32</td><td>Monthly</td><td><span class="pill pill-gray">Other / Budget</span></td><td>—</td><td style="color:#5f5e5a;font-size:12px">Retiring / not right for purpose</td></tr>
+      <tr><td>Mitchellweiler Law Corporation</td><td style="text-align:right;font-weight:500">$30</td><td>Annual</td><td><span class="pill pill-gray">Other</span></td><td>Other</td><td style="color:#5f5e5a;font-size:12px">—</td></tr>
+      <tr><td>Remaining 16 ≥$24 churns</td><td style="text-align:right;font-weight:500">$451</td><td>Mix</td><td>—</td><td>—</td><td style="color:#5f5e5a;font-size:12px">Mostly budget / other</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── SECTION 6: QUALITATIVE SIGNALS ── -->
+<h2>Qualitative signals from comments</h2>
+<p class="section-sub">Recurring themes across customer comments beyond the structured reason categories.</p>
+
+<div class="signal-grid" style="margin-bottom:1.5rem">
+  <div class="signal" style="border-left-color:#E24B4A;background:#fdf4f4">
+    <p class="title">Linux support (recurring dealbreaker)</p>
+    <p class="desc">Multiple customers citing no Linux app as sole reason for leaving — going to iDrive or self-hosting. Predictable, avoidable loss.</p>
+  </div>
+  <div class="signal" style="border-left-color:#7F77DD;background:#f5f4fe">
+    <p class="title">Unlimited plan cancellation</p>
+    <p class="desc">At least one $32 MRR customer left specifically because "unlimited was cancelled" — plan change creating active churn.</p>
+  </div>
+  <div class="signal" style="border-left-color:#EF9F27;background:#fdf6ea">
+    <p class="title">Desktop app quality</p>
+    <p class="desc">"Clunky," "hasn't been updated in years," "slow to sync to new device" — repeated across solo customers. Dropbox cited as alternative.</p>
+  </div>
+  <div class="signal" style="border-left-color:#1D9E75;background:#f2faf6">
+    <p class="title">No downgrade-to-free option</p>
+    <p class="desc">Several customers frustrated by forced cancellation — policy generating negative sentiment, no-refund complaints, and explicit statements of non-return.</p>
+  </div>
+  <div class="signal" style="border-left-color:#378ADD;background:#f0f6fd">
+    <p class="title">Customer service response time</p>
+    <p class="desc">Live Oak Inventories (5-year customer, $20 MRR): issues unresolved "months later." One of only 2 CS-attributed churns, but avg tenure 1,982 days — most loyal cohort lost.</p>
+  </div>
+  <div class="signal" style="border-left-color:#888780;background:#f5f5f3">
+    <p class="title">Proton Drive consolidation</p>
+    <p class="desc">5 customers left for Proton Drive citing VPN+storage bundling. Differentiated value prop — worth monitoring as a growing competitive threat.</p>
+  </div>
+</div>
+
+<!-- ── SECTION 7: CANCELLATION TIMING ── -->
+<hr class="divider">
+<h2 style="border-top:none;padding-top:0">Cancellation timing vs. renewal date</h2>
+<p class="section-sub">When annual customers submitted their cancellation request relative to their upcoming renewal date (98 annual customers). Monthly customers (33) almost universally cancel 15–30 days before renewal, consistent with standard billing cycles.</p>
+
+<div class="metrics">
+  <div class="metric"><p class="label">Median cancel timing</p><p class="val">30 days</p><p class="sub">before renewal</p></div>
+  <div class="metric"><p class="label">Within 30d of renewal</p><p class="val">62%</p><p class="sub">61 of 98 annual customers</p></div>
+  <div class="metric"><p class="label">Within 7d of renewal</p><p class="val">15%</p><p class="sub">13 last-minute customers</p></div>
+  <div class="metric"><p class="label">181+ days out</p><p class="val">11</p><p class="sub">decided to leave long ago</p></div>
+</div>
+
+<div class="grid-2" style="margin-bottom:1.5rem">
+  <div>
+    <p class="section-label">Annual customers — when they cancelled relative to renewal</p>
+    <div class="legend">
+      <span><span class="swatch" style="background:#E24B4A"></span>Likely renewal-email triggered (≤30d)</span>
+      <span><span class="swatch" style="background:#888780"></span>Earlier / pre-meditated</span>
+    </div>
+    <div class="chart-wrap" style="height:240px"><canvas id="timingBar" role="img" aria-label="Bar chart of annual customer cancellation timing relative to renewal date">Cancellation timing.</canvas></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;justify-content:center">
+    <div class="insight-card" style="border-left:3px solid #E24B4A">
+      <p class="title">Renewal email is a churn trigger</p>
+      <p class="desc">The 15–30d bucket (43 customers, 44%) is by far the largest — aligns precisely with when renewal reminder emails typically land</p>
+    </div>
+    <div class="insight-card" style="border-left:3px solid #888780">
+      <p class="title">~38% had already decided</p>
+      <p class="desc">37 customers cancelled 31+ days before renewal — premeditated exits, not impulse reactions to an invoice email</p>
+    </div>
+    <div class="insight-card" style="border-left:3px solid #EF9F27">
+      <p class="title">2 cancelled after renewal</p>
+      <p class="desc">Likely saw the charge, requested cancellation after the fact — refund friction risk</p>
+    </div>
+  </div>
+</div>
+
+<div class="grid-mb">
+  <p class="section-label">Avg days before renewal by churn reason — reactive vs. premeditated</p>
+  <div class="legend">
+    <span><span class="swatch" style="background:#E24B4A"></span>Reactive (renewal-triggered)</span>
+    <span><span class="swatch" style="background:#7F77DD"></span>Premeditated (product dissatisfaction)</span>
+  </div>
+  <div class="chart-wrap" style="height:200px"><canvas id="reasonTiming" role="img" aria-label="Bar chart of average days before renewal by churn reason">Reason timing.</canvas></div>
+  <p class="note">CS and speed churns happen closest to renewal (reactive). Missing features and syncing churns cancel ~80 days out — ongoing frustration, not triggered by the email.</p>
+</div>
+
+<div class="card" style="margin-bottom:2rem">
+  <p class="section-label" style="margin-bottom:12px">What this means for your renewal flow</p>
+  <div class="recs">
+    <div class="rec">
+      <p class="title">Win-back window</p>
+      <p class="desc">62% of churns happen within 30 days of renewal — a targeted save campaign in that window (discount, feature callout, human outreach for ≥$24 MRR) could recover material revenue</p>
+    </div>
+    <div class="rec">
+      <p class="title">Renewal email content</p>
+      <p class="desc">The email is triggering ~44% of churns in the 15–30d window. Consider testing a value-highlight email before the invoice notice — remind customers what they've stored and synced</p>
+    </div>
+    <div class="rec">
+      <p class="title">Early-warning segment</p>
+      <p class="desc">11 customers cancelled 181+ days before renewal — already gone in spirit. Low engagement and no recent logins are predictive signals worth acting on before they decide</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const tc = 'rgba(0,0,0,0.45)';
+const gc = 'rgba(0,0,0,0.07)';
+const noLegend = { legend: { display: false } };
+const baseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: noLegend,
+  scales: {
+    x: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc } },
+    y: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc } }
+  }
+};
+const noXGrid = JSON.parse(JSON.stringify(baseOpts));
+noXGrid.scales.x.grid = { display: false };
+
+new Chart(document.getElementById('mrrReason'), {
+  type: 'bar',
+  data: {
+    labels: ['Budget','Other','Syncing','Speed','Missing\nfeatures','Too complex','CS','Privacy'],
+    datasets: [{ data: [768.06,624.56,530,265.08,98.08,64,28,16],
+      backgroundColor: ['#E24B4A','#888780','#7F77DD','#EF9F27','#1D9E75','#378ADD','#D4537E','#BA7517'],
+      borderRadius: 4 }]
+  },
+  options: { ...noXGrid, plugins: { ...noLegend },
+    scales: { x: { ticks: { color: tc, font: { size: 10 }, autoSkip: false }, grid: { display: false } },
+              y: { ticks: { color: tc, font: { size: 11 }, callback: v => '$' + v }, grid: { color: gc } } } }
+});
+
+new Chart(document.getElementById('countReason'), {
+  type: 'bar', indexAxis: 'y',
+  data: {
+    labels: ['Budget','Other','Speed','Missing features','Syncing','Too complex','CS','Privacy'],
+    datasets: [{ data: [48,37,14,11,11,6,2,2],
+      backgroundColor: ['#E24B4A','#888780','#EF9F27','#1D9E75','#7F77DD','#378ADD','#D4537E','#BA7517'],
+      borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: noLegend,
+    scales: { x: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc } },
+              y: { ticks: { color: tc, font: { size: 11 } }, grid: { display: false } } } }
+});
+
+new Chart(document.getElementById('compChart'), {
+  type: 'bar', indexAxis: 'y',
+  data: {
+    labels: ['Other','Google Drive','Self-hosting','Dropbox','OneDrive','iCloud','Proton Drive','Sharepoint','iDrive'],
+    datasets: [{ data: [36,19,14,9,8,6,5,3,2], backgroundColor: '#888780', borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: noLegend,
+    scales: { x: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc } },
+              y: { ticks: { color: tc, font: { size: 11 } }, grid: { display: false } } } }
+});
+
+new Chart(document.getElementById('mrrBucket'), {
+  type: 'bar',
+  data: {
+    labels: ['<$5','$5–10','$10–20','$20–50','$50–100','$100+'],
+    datasets: [{ data: [24,56,21,23,5,2],
+      backgroundColor: ['#B5D4F4','#85B7EB','#378ADD','#185FA5','#0C447C','#042C53'],
+      borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: noLegend,
+    scales: { x: { ticks: { color: tc, font: { size: 11 } }, grid: { display: false } },
+              y: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc } } } }
+});
+
+new Chart(document.getElementById('tenureChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['New (<30d)','Mid (30d–1yr)','Long-term (>1yr)'],
+    datasets: [{ data: [13,57,61], backgroundColor: ['#EF9F27','#1D9E75','#7F77DD'], borderWidth: 0 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, position: 'bottom',
+      labels: { color: tc, font: { size: 11 }, boxWidth: 10, padding: 8 } } } }
+});
+
+new Chart(document.getElementById('tenureReason'), {
+  type: 'bar',
+  data: {
+    labels: ['Privacy','Syncing','Speed','Too complex','Budget','Other','Missing feat.','CS (5.4yr avg)'],
+    datasets: [{ data: [492,546,706,759,764,924,1088,1982],
+      backgroundColor: ['#BA7517','#7F77DD','#EF9F27','#378ADD','#E24B4A','#888780','#1D9E75','#D4537E'],
+      borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: noLegend,
+    scales: { x: { ticks: { color: tc, font: { size: 10 }, autoSkip: false }, grid: { display: false } },
+              y: { ticks: { color: tc, font: { size: 11 }, callback: v => v + 'd' }, grid: { color: gc } } } }
+});
+
+new Chart(document.getElementById('timingBar'), {
+  type: 'bar',
+  data: {
+    labels: ['After renewal','0–7d','8–14d','15–30d','31–60d','61–90d','91–180d','181d+'],
+    datasets: [{ data: [2,13,3,43,7,13,6,11],
+      backgroundColor: ['#A32D2D','#E24B4A','#E24B4A','#E24B4A','#888780','#888780','#888780','#888780'],
+      borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { ...noLegend, tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + ' customers' } } },
+    scales: { x: { ticks: { color: tc, font: { size: 11 }, autoSkip: false }, grid: { display: false } },
+              y: { ticks: { color: tc, font: { size: 11 }, stepSize: 10 }, grid: { color: gc } } } }
+});
+
+new Chart(document.getElementById('reasonTiming'), {
+  type: 'bar',
+  data: {
+    labels: ['CS issues','Speed','Too complex','Privacy','Other','Budget','Syncing','Missing features'],
+    datasets: [{ data: [25.5,30.7,39.0,54.5,61.7,69.7,79.1,80.1],
+      backgroundColor: ['#E24B4A','#E24B4A','#E24B4A','#888780','#888780','#888780','#7F77DD','#7F77DD'],
+      borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { ...noLegend, tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + ' avg days before renewal' } } },
+    scales: { x: { ticks: { color: tc, font: { size: 10 }, autoSkip: false }, grid: { display: false } },
+              y: { ticks: { color: tc, font: { size: 11 }, callback: v => v + 'd' }, grid: { color: gc } } } }
+});
+</script>
+</body>
+</html>
